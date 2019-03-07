@@ -1,0 +1,17 @@
+﻿@{
+  ViewBag.Title = "Session Expired";
+}
+
+<div class="panel panel-default">
+  <div class="panel-body">
+    <h2 style="padding-bottom: 15px;">Session Expired</h2>
+
+    <p>Your session has expired. You can sign in again using the button below.</p>
+
+    <p>
+      @using (Html.BeginForm("Login", "Home", new { Area = "" })) {
+        <button type="submit" class="btn btn-success"><i class="fa fa-fw fa-sign-in"></i> Log in with your App Store account</button>
+      }
+    </p>
+  </div>
+</div>

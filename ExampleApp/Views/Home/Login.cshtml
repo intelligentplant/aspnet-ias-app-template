@@ -1,0 +1,20 @@
+﻿
+@{
+  ViewBag.Title = "Home";
+}
+
+<div class="panel panel-default">
+  <div class="panel-body">
+    <h2 style="padding-bottom: 15px;">Hello!</h2>
+
+    <h4 style="padding-bottom: 15px;">Welcome to your example <a href="https://appstore.intelligentplant.com" target="_blank">Intelligent Plant Industrial App Store</a> application!</h4>
+
+    <p>You are not signed in yet. You can sign in using the button below.</p>
+
+    <p>
+      @using (Html.BeginForm()) {
+        <button type="submit" class="btn btn-success"><i class="fa fa-fw fa-sign-in"></i> Log in with your App Store account</button>
+      }
+    </p>
+  </div>
+</div>

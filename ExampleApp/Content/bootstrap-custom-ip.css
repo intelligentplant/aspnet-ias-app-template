@@ -1,0 +1,9 @@
+﻿/* Additional Bootstrap customisations not available at http://getbootstrap.com/customize */
+
+.navbar.navbar-inverse button.navbar-toggle {
+    color: #dddddd;
+}
+
+.dropdown-menu > li > a {
+    line-height: 3;
+}

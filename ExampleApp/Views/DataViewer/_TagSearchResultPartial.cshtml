@@ -1,0 +1,127 @@
+﻿@model ExampleApp.Models.TagSearchResultViewModel
+<div class="panel panel-success tag-search-results">
+  <div class="panel-heading"><i class="fa fa-fw fa-tags"></i> Select Tags</div>
+  @if (Model == null) {
+    <div class="panel-body">
+      <i class="fa fa-fw fa-spin fa-cog"></i>
+      <span class="text-muted">Please wait...</span>
+    </div>
+  }
+  else {
+    <div class="panel-body">
+      <div class="input-group input-group-sm">
+        @Html.TextBoxFor(x => x.Filter.Name, new { @class = "form-control name-filter", placeholder = "Enter a tag name filter..." })
+        <span class="input-group-btn">
+          <button type="button" class="btn btn-default apply-filter" title="Filter tags">
+            <i class="fa fa-fw fa-search"></i>
+            Filter
+          </button>
+        </span>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th style="width: 85px;"></th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Unit</th>
+          </tr>
+        </thead>
+        <tbody>
+          @{
+            var startPosition = (Model.Filter.Page - 1) * Model.Filter.PageSize;
+            var count = 0;
+          }
+          @foreach (var tag in Model.Tags) {
+            ++count;
+            <tr>
+              <td>
+                <button type="button" class="btn btn-sm btn-default add-tag-button" data-dsn="@Model.DataSourceName" data-tag-name="@tag.Name" data-toggle="modal" data-target="#subscriptionModal">
+                  <i class="fa fa-fw fa-tag"></i>
+                  <span>Add</span>
+                </button>
+              </td>
+              <td>@tag.Name</td>
+              <td>@tag.Description</td>
+              <td>@tag.UnitOfMeasure</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="panel-footer">
+      <div class="pull-left">
+        <button type="button" class="btn btn-sm btn-default tags-page-first" @(Model?.Filter.Page > 1 ? "" : "disabled") title="First results page">
+          <i class="fa fa-fw fa-chevron-left"></i>
+          <span>First</span>
+        </button>
+        <button type="button" class="btn btn-sm btn-default tags-page-previous" @(Model?.Filter.Page > 1 ? "" : "disabled") title="Previous results page">
+          <i class="fa fa-fw fa-chevron-left"></i>
+          <span>Previous</span>
+        </button>
+        <button type="button" class="btn btn-sm btn-default tags-page-next" @(count == Model?.Filter.PageSize ? "" : "disabled") title="Next results page">
+          <span>Next</span>
+          <i class="fa fa-fw fa-chevron-right"></i>
+        </button>
+      </div>
+      <div class="pull-right">
+        @if (count > 0) {
+          <span class="text-muted">Displaying tags @(startPosition + 1) to @(startPosition + count)</span>
+        }
+        else {
+          <span class="text-muted">No more tags to display</span>
+        }
+      </div>
+      <div class="clearfix"></div>
+    </div>
+    <script type="text/javascript">
+      $(function () {
+        var filterText = $('.tag-search-results .name-filter');
+
+        $('.tag-search-results .apply-filter')
+          .off('click')
+          .on('click',
+            function () {
+              var btn = $(this);
+              btn.find('i.fa').removeClass('fa-search').addClass('fa-spin fa-cog');
+              loadTags('@Model.DataSourceName', filterText.val(), 1);
+            });
+
+        $('.tag-search-results .tags-page-first')
+          .off('click')
+          .on('click',
+            function () {
+              var btn = $(this);
+              btn.find('i.fa').removeClass('fa-chevron-left').addClass('fa-spin fa-cog');
+              loadTags('@Model.DataSourceName', '@Model.Filter.Name', 1);
+            });
+
+        $('.tag-search-results .tags-page-previous')
+          .off('click')
+          .on('click',
+            function () {
+              var btn = $(this);
+              btn.find('i.fa').removeClass('fa-chevron-left').addClass('fa-spin fa-cog');
+              loadTags('@Model.DataSourceName', '@Model.Filter.Name', @(Model.Filter.Page - 1));
+            });
+
+        $('.tag-search-results .tags-page-next')
+          .off('click')
+          .on('click',
+            function () {
+              var btn = $(this);
+              btn.find('i.fa').removeClass('fa-chevron-right').addClass('fa-spin fa-cog');
+              loadTags('@Model.DataSourceName', '@Model.Filter.Name', @(Model.Filter.Page + 1));
+            });
+
+        $(document).on('click', '.tag-search-results .add-tag-button', function () {
+          var btn = $(this);
+          $('#modal_dsn').val(btn.data('dsn'));
+          $('#modal_tagname').val(btn.data('tagName'));
+        });
+      });
+    </script>
+  }
+</div>

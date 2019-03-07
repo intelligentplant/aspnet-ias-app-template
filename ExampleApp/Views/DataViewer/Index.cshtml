@@ -1,0 +1,215 @@
+﻿@{
+  ViewBag.Title = "Data Viewer";
+}
+
+<div class="panel panel-success">
+  <div class="panel-heading"><i class="fa fa-fw fa-database"></i> Select a Data Source</div>
+  <div class="panel-body">
+    <div class="form-group">
+      <div class="col-xs-12">
+        <select id="data-source-select" class="form-control" disabled="disabled">
+          <option>Please Wait...</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/template" id="tag-search-results-wait">
+  @Html.Partial("_TagSearchResultPartial", null)
+</script>
+
+<div id="tag-search-results-container">
+  @Html.Partial("_TagSearchResultPlaceholderPartial")
+</div>
+
+<script type="text/template" id="tag-snapshot-value-template">
+  @Html.Partial("_TagSnapshotValuePlaceholderPartial")
+</script>
+
+<div class="panel panel-success">
+  <div class="panel-heading"><i class="fa fa-fw fa-line-chart"></i> Monitor Current Tag Values</div>
+  <div class="table-responsive">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Data Source</th>
+          <th>Tag</th>
+          <th>Timestamp</th>
+          <th>Value</th>
+          <th>Quality</th>
+        </tr>
+      </thead>
+      <tbody id="tag-values-container">
+        <tr class="placeholder">
+          <td colspan="5" style="text-align: left">
+            <em class="text-muted">No tags selected</em>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="subscriptionModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Tag Subscription</h4>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+
+          <input type="hidden" name="dsn" id="modal_dsn" value="" />
+          <input type="hidden" name="dsn" id="modal_tagname" value="" />
+
+          <div class="col-md-12">
+
+            <div class="alert alert-info" role="alert">
+              <span aria-hidden="true"><i class="fa fa-fw fa-info-circle"></i></span>
+              <span class="sr-only">Info:</span>
+              Subscription cost is 1 credit
+            </div>
+
+            <div class="alert alert-warning" role="alert">
+              <span aria-hidden="true"><i class="fa fa-fw fa-warning"></i></span>
+              <span class="sr-only">Warning:</span>
+              Make sure the application status is set to "Pending" in order to avoid debiting account. More info can be found <a href="https://appstore.intelligentplant.com/wiki/doku.php?id=dev:app_store_developers" target="_blank" title="Intelligent Plant App Store Wiki">here</a>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="buySubscription();">Buy</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@section scripts {
+  <script type="text/javascript" src="~/signalr/hubs"></script>
+  <script type="text/javascript" src="~/Scripts/signalr-client.js"></script>
+  <script type="text/javascript">
+
+    function loadDataSources() {
+      return $.ajax({
+        method: "GET",
+        url: "api/data/datasources"
+      })
+        .done(function (data) {
+          var control = $("#data-source-select");
+          control.empty();
+          $.each(data.DataSources,
+            function (i, ds) {
+              $("<option></option>").attr("value", ds.Name.QualifiedName).text(ds.Name.DisplayName).appendTo(control);
+            });
+          control.removeAttr("disabled").trigger("change");
+        });
+    }
+
+    function loadTags(dataSourceName, name, page) {
+      return $.ajax({
+        method: "POST",
+        url: "@Url.Action("GetTags")",
+        data: {
+          dataSourceName: dataSourceName,
+          name: name,
+          page: page
+        }
+      })
+        .done(function (html) {
+          $("#tag-search-results-container").html(html);
+        });
+    }
+
+    function addTagToQueryList(qualifiedDataSourceName, tagName) {
+      var container = $("#tag-values-container");
+      var tagId = qualifiedDataSourceName.toUpperCase() + "::" + tagName.toUpperCase();
+      var row = container.find('tr.tag-snapshot-value[data-tagid="' + tagId + '"]');
+      if (row.length > 0) {
+        return;
+      }
+
+      row = $($("#tag-snapshot-value-template").html());
+      row.addClass("tag-snapshot-value");
+      row.attr("data-tagid", tagId);
+
+      var dataSourceDisplayName = $('#data-source-select option[value="' + qualifiedDataSourceName + '"]').text();
+
+      row.find(".dsn").text(dataSourceDisplayName ? dataSourceDisplayName : dataSourceName);
+      row.find(".tagname").text(tagName);
+
+      container.find(".placeholder").hide();
+      row.appendTo(container);
+      $.connection.dataHub.server.addSnapshotSubscription(qualifiedDataSourceName, [tagName]);
+    }
+
+    function buySubscription() {
+      $.ajax({
+        method: "POST",
+        url: "@Url.Content("~/api/data/buy")"
+      })
+        .done(function (data) {
+
+          $('#subscriptionModal').modal('hide');
+
+          var btn = $(this);
+          addTagToQueryList($("#modal_dsn").val(), $("#modal_tagname").val());
+        })
+        .fail(function () {
+          alert("error");
+
+          $('#subscriptionModal').modal('hide');
+        });
+    }
+
+    $(function () {
+      var updateSnapshotValues = function (dsn, values) {
+        var container = $("#tag-values-container");
+        $.each(values,
+          function (i, val) {
+            var tagId = (dsn.toUpperCase() + "::" + val.TagName.toUpperCase());
+            var row = container.find('tr.tag-snapshot-value[data-tagid="' + tagId.replace(/\\/g, "\\\\") + '"]');
+            if (row.length === 0) {
+              return;
+            }
+
+            row.find(".timestamp").text(new Date(val.UtcSampleTime).toUTCString());
+            var value = "" + val.TextValue;
+            if (value === "") {
+              value = value + val.NumericValue;
+            }
+            if (val.Unit) {
+              value = value + " " + val.Unit;
+            }
+            row.find(".value").text(value);
+            row.find(".quality").text(val.Status);
+          });
+      };
+
+      $("#data-source-select")
+        .on("change",
+          function () {
+            var container = $("#tag-search-results-container");
+            container.html($("#tag-search-results-wait").html());
+            loadTags($(this).val(), null, 1);
+          });
+
+      $.connection.dataHub.client.onValuesReceived = function (dsn, values) {
+        console.log(dsn, values);
+        updateSnapshotValues(dsn, values);
+      };
+
+      application.signalr.init().done(function () {
+        $.connection.dataHub.server.removeAllSnapshotSubscriptions();
+      }).always(function () {
+        loadDataSources();
+      });
+    });
+  </script>
+}
