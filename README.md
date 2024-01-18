@@ -1,4 +1,6 @@
-﻿# Getting Started
+> This repository is deprecated. Please using the updated client tools and templates found [here](https://github.com/intelligentplant/IndustrialAppStore.ClientTools.DotNet).
+ 
+# Getting Started
 
 ## Registering as an App Store Developer
 
